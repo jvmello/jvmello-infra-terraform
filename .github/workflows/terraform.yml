@@ -1,0 +1,45 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+# Only safe, offline validations: no step here reads or changes real
+# infrastructure, and no credential is used or required.
+# A real "terraform plan" would require DIGITALOCEAN_TOKEN and
+# CLOUDFLARE_API_TOKEN (the cloudflare_zone data source needs to query the
+# real API) — deliberately not configured in CI. See README.md, "Basic
+# workflow" section, to run plan locally with your own credentials.
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt -check
+        run: terraform fmt -check -recursive -diff
+
+      - name: terraform init (no backend, no credentials)
+        run: terraform init -backend=false
+
+      - name: terraform validate
+        run: terraform validate

@@ -1,0 +1,27 @@
+# Copy to terraform.tfvars and fill in with the real values.
+# terraform.tfvars must NEVER go into git (see .gitignore).
+#
+# do_token and cloudflare_api_token are deliberately left out of this file:
+# prefer exporting DIGITALOCEAN_TOKEN and CLOUDFLARE_API_TOKEN in the
+# environment. If you'd rather put them here anyway, NEVER version the
+# resulting file.
+
+# --- VPS (DigitalOcean Droplet) --------------------------------------------
+# TODO: fill in with the real values confirmed in the DigitalOcean
+# dashboard before running any `terraform import` — see terraform/imports.md.
+vps_name   = "TODO"
+vps_region = "TODO" # e.g.: nyc3, fra1
+vps_size   = "TODO" # e.g.: s-1vcpu-2gb
+vps_image  = "TODO" # e.g.: ubuntu-22-04-x64
+vps_ipv6   = false
+vps_tags   = []
+
+# Only relevant if the VPS ever needs to be recreated from scratch (see
+# variables.tf and docs/terraform-design.md) — ignored after the import.
+vps_ssh_keys  = []
+vps_user_data = null
+
+# --- Domain -----------------------------------------------------------------
+# Already known from the jvmello-infra repository — normally doesn't need
+# to change.
+# cloudflare_zone_name = "jvmello.dev"
