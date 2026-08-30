@@ -21,12 +21,14 @@ data "cloudflare_zone" "jvmello_dev" {
 # diffs.
 # ---------------------------------------------------------------------------
 resource "digitalocean_droplet" "vps" {
-  name   = var.vps_name
-  region = var.vps_region
-  size   = var.vps_size
-  image  = var.vps_image
-  ipv6   = var.vps_ipv6
-  tags   = var.vps_tags
+  name       = var.vps_name
+  region     = var.vps_region
+  size       = var.vps_size
+  image      = var.vps_image
+  ipv6       = var.vps_ipv6
+  tags       = var.vps_tags
+  monitoring = var.vps_monitoring
+  backups    = var.vps_backups
 
   ssh_keys  = var.vps_ssh_keys
   user_data = var.vps_user_data

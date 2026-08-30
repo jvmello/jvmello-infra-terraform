@@ -101,7 +101,28 @@ Concrete risks, specific to this infrastructure — not generic ones:
    hide diffs" — it's the only documented way to prevent Terraform from
    proposing to recreate a production VPS because of a field the provider
    itself can't manage incrementally after creation.
-2. **`image` may show a diff after the import.** DigitalOcean sometimes
+2. **`monitoring`/`backups` on the Droplet — this actually happened, and
+   `monitoring` forced a replace.** These two booleans are Optional (not
+   Optional+Computed) in the provider's schema, defaulting to `false` if
+   omitted from the config. That means leaving them out doesn't mean
+   "leave the real value alone" the way an Optional+Computed attribute
+   like `vpc_uuid` does — it actively enforces `false`. The Droplet here
+   was imported with both actually `true`, so the very first post-import
+   `terraform plan` came back as `-/+ resource "digitalocean_droplet"
+   "vps" { ... monitoring = true -> false # forces replacement ... }` — a
+   full destroy-and-recreate plan for a production VPS, caught before any
+   `apply`. `backups` alone wouldn't have forced replacement (it's a
+   normal in-place update), but `monitoring` does — undocumented in the
+   provider's argument reference, only visible in a real plan's `# forces
+   replacement` annotation. **Fix applied:** both are now explicit
+   arguments (`var.vps_monitoring`, `var.vps_backups` in `variables.tf`,
+   with no default — they must be confirmed and set), rather than left
+   implicit. The same category of mistake (a plain Optional attribute
+   with a non-obvious provider-side default, silently diffing after
+   import) could apply to any attribute this document doesn't explicitly
+   call out — when in doubt after an import, read every line of the
+   `plan` diff, not just the ones already flagged here.
+3. **`image` may show a diff after the import.** DigitalOcean sometimes
    returns an existing Droplet's `image` as a numeric ID even if it was
    created from a slug (e.g. `ubuntu-22-04-x64`). If this happens, the
    first post-import `terraform plan` may show a change in this field.
@@ -109,7 +130,7 @@ Concrete risks, specific to this infrastructure — not generic ones:
    confirm first whether the diff actually shows up; if it does and it's
    exactly this format mismatch (slug vs. ID, with no destroy/recreate
    proposal), then consider adding `image` to `ignore_changes`.
-3. **DNS records' type/value needs to be exact — this actually happened.**
+4. **DNS records' type/value needs to be exact — this actually happened.**
    If a Cloudflare record's real type is `CNAME` and the code declares
    `A` (or vice versa), the provider treats that as a type change — it
    normally forces the DNS record to be recreated. Since DNS has
@@ -122,13 +143,13 @@ Concrete risks, specific to this infrastructure — not generic ones:
    `terraform/locals.tf` and `terraform/main.tf` — this item stays here as
    a reminder that "confirm before importing" isn't optional caution, it's
    how these two mismatches were actually caught before any `apply`.
-4. **TTL on proxied records.** Records with `proxied = true` on
+5. **TTL on proxied records.** Records with `proxied = true` on
    Cloudflare require `ttl = 1` ("automatic"). We use `ttl = 1` for every
    record in the `for_each` regardless of `proxied` status — the
    unproxied `api.worldcup` record was also confirmed to already have
    `ttl = 1` in reality, so this didn't turn out to be a mismatch, but
    double-check if you add a record with a different TTL in the future.
-5. **There is no DigitalOcean Cloud Firewall on this account.** Confirmed
+6. **There is no DigitalOcean Cloud Firewall on this account.** Confirmed
    directly in the dashboard (2026-08-29): the "Firewalls" page shows
    "Looks like you haven't assigned a firewall". The 80/443-to-Cloudflare-IPs
    restriction exists today **only** via ufw on the host — which, per
@@ -137,7 +158,7 @@ Concrete risks, specific to this infrastructure — not generic ones:
    one now would mean provisioning something new, not importing something
    that exists — a deliberate decision, out of scope for this migration
    (see the comment in `terraform/main.tf`).
-6. **API token with broad privileges.** Both the DigitalOcean and
+7. **API token with broad privileges.** Both the DigitalOcean and
    Cloudflare tokens, when used in a real `terraform plan`/`apply`, have
    read/write access to the entire account (unless you create tokens with
    restricted scope). No write command has been run during this

@@ -77,6 +77,38 @@ variable "vps_tags" {
   default     = []
 }
 
+variable "vps_monitoring" {
+  description = <<-EOT
+    Whether the DigitalOcean monitoring agent is installed on the Droplet.
+    This is Optional (not Optional+Computed) in the provider's schema, so
+    leaving it unset makes Terraform enforce the provider's own default
+    (false) instead of leaving the real value alone — if the real Droplet
+    has this on, an unset value here would show up as a change.
+    IMPORTANT: unlike most attributes on this resource, changing this
+    field forces the Droplet to be replaced (destroy + recreate) —
+    confirmed via a real `terraform plan` diff on 2026-08-30, not
+    documented explicitly in the provider docs. Get this wrong and a
+    routine import can turn into an accidental "-/+ replace" plan for a
+    production VPS. TODO: confirm the real value in the DigitalOcean
+    dashboard (Droplet → Monitoring tab) before importing.
+  EOT
+  type        = bool
+}
+
+variable "vps_backups" {
+  description = <<-EOT
+    Whether automatic DigitalOcean backups are enabled on the Droplet.
+    Same Optional-vs-Optional+Computed issue as vps_monitoring: leaving
+    this unset makes Terraform enforce the provider's default (false)
+    rather than leaving the real value alone. Unlike monitoring, changing
+    this field does NOT force replacement by itself — but get it wrong
+    and `terraform plan`/`apply` would silently turn backups off (or on).
+    TODO: confirm the real value in the DigitalOcean dashboard (Droplet →
+    Backups tab) before importing.
+  EOT
+  type        = bool
+}
+
 variable "vps_ssh_keys" {
   description = <<-EOT
     IDs or fingerprints of the SSH keys authorized on the Droplet. Ignored

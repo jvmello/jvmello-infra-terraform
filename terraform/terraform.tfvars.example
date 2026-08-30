@@ -15,6 +15,12 @@ vps_size   = "TODO" # e.g.: s-1vcpu-2gb
 vps_image  = "TODO" # e.g.: ubuntu-22-04-x64
 vps_ipv6   = false
 vps_tags   = []
+# monitoring/backups default to false in the DigitalOcean API if unset, and
+# Terraform enforces that default rather than leaving the real value alone
+# (see variables.tf) — get these wrong and monitoring specifically can
+# trigger an unwanted destroy+recreate. Confirm both in the dashboard.
+vps_monitoring = false # TODO: confirm in the dashboard, don't guess
+vps_backups    = false # TODO: confirm in the dashboard, don't guess
 
 # Only relevant if the VPS ever needs to be recreated from scratch (see
 # variables.tf and docs/terraform-design.md) — ignored after the import.
