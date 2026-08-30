@@ -143,13 +143,29 @@ Concrete risks, specific to this infrastructure — not generic ones:
    `terraform/locals.tf` and `terraform/main.tf` — this item stays here as
    a reminder that "confirm before importing" isn't optional caution, it's
    how these two mismatches were actually caught before any `apply`.
-5. **TTL on proxied records.** Records with `proxied = true` on
+5. **A field we added ourselves (`comment`) was the only remaining diff
+   after importing all 7 DNS records.** After the import,
+   `terraform plan` showed all 7 records as "to change" — every one with
+   `+ comment = "Managed via Terraform (jvmello-infra-terraform)."` and
+   nothing else (confirmed by the "9 unchanged attributes hidden" note on
+   each). This wasn't a data mismatch like the two above — none of these
+   records had ever had a comment, and we were the ones who decided to
+   add one. Low-risk (a comment update, not a recreation), but it still
+   meant the post-import plan wasn't the clean "no changes" this stage is
+   supposed to reach. **Fix applied:** dropped the `comment` argument
+   entirely from `cloudflare_dns_record.sites` in `terraform/main.tf`. If
+   you want a "managed by Terraform" label on these records, that's a
+   legitimate thing to want — just add it back later as its own reviewed
+   `terraform plan`/`apply`, separate from this migration, so it's a
+   change you consciously chose to make to production DNS rather than one
+   that rode along with the import.
+6. **TTL on proxied records.** Records with `proxied = true` on
    Cloudflare require `ttl = 1` ("automatic"). We use `ttl = 1` for every
    record in the `for_each` regardless of `proxied` status — the
    unproxied `api.worldcup` record was also confirmed to already have
    `ttl = 1` in reality, so this didn't turn out to be a mismatch, but
    double-check if you add a record with a different TTL in the future.
-6. **There is no DigitalOcean Cloud Firewall on this account.** Confirmed
+7. **There is no DigitalOcean Cloud Firewall on this account.** Confirmed
    directly in the dashboard (2026-08-29): the "Firewalls" page shows
    "Looks like you haven't assigned a firewall". The 80/443-to-Cloudflare-IPs
    restriction exists today **only** via ufw on the host — which, per
@@ -158,7 +174,7 @@ Concrete risks, specific to this infrastructure — not generic ones:
    one now would mean provisioning something new, not importing something
    that exists — a deliberate decision, out of scope for this migration
    (see the comment in `terraform/main.tf`).
-7. **API token with broad privileges.** Both the DigitalOcean and
+8. **API token with broad privileges.** Both the DigitalOcean and
    Cloudflare tokens, when used in a real `terraform plan`/`apply`, have
    read/write access to the entire account (unless you create tokens with
    restricted scope). No write command has been run during this

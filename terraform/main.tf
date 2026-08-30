@@ -83,5 +83,11 @@ resource "cloudflare_dns_record" "sites" {
   ttl     = 1
   proxied = each.value.proxied
 
-  comment = "Managed via Terraform (jvmello-infra-terraform)."
+  # No "comment" here on purpose: none of these records had one in
+  # reality (confirmed via a real terraform plan after import — every
+  # single record showed "+ comment", nothing else). Adding one now would
+  # be a real, deliberate change to production DNS, not a migration of
+  # what already exists — see docs/terraform-design.md, "Migration
+  # risks". If you want a "managed by Terraform" label on these records,
+  # add it later as its own reviewed change.
 }
