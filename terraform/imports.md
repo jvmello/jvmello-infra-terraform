@@ -1,28 +1,28 @@
-# Import plan (NOT EXECUTED)
+# Import plan (COMPLETED — 2026-08-30)
 
-This file documents, for each resource that already exists, the
-corresponding Terraform address and the suggested command to import it.
-**None of these commands have been run.** All the real IDs below have
-been confirmed (Droplet via `doctl`/dashboard on 2026-08-29, DNS records
-via the Cloudflare API on 2026-08-29) — run the commands manually, one at
-a time, only after:
+This file originally documented, for each resource that already existed,
+the Terraform address and the command used to import it. **All 8
+resources listed below have since been imported**, and `terraform plan`
+confirmed a clean `No changes` afterward — this repo's Terraform state
+now fully describes the real infrastructure.
 
-1. Filling in `terraform.tfvars` with the real values (copy from
-   `terraform.tfvars.example`) — already done for the VPS fields at the
-   time of writing.
-2. Reading the risks in `docs/terraform-design.md` ("Migration risks"
-   section) — especially `ssh_keys`, `user_data`, and the DNS records'
-   type/proxied status (two of the records below turned out to differ
-   from the original assumption — see the notes under each table).
-3. Running `terraform init -backend=false` and `terraform plan` **before**
-   the import just to confirm the code compiles (it will show "to be
-   created" for everything, which is expected — this doesn't create
-   anything, it only validates the code).
+The real IDs (Droplet ID, Cloudflare zone ID, DNS record IDs) have been
+**intentionally redacted** from this file, since it's committed to a
+public repository and those IDs aren't needed here anymore — they're
+already in the local (gitignored) `terraform.tfstate`. If you ever need
+one again:
 
-After each `terraform import`, run `terraform plan` again: ideally it
-shows no change for the resource you just imported. If it does, adjust
-the code (never the real resource) until the plan is clean, or document
-the reason for the residual diff.
+```bash
+terraform state show digitalocean_droplet.vps
+terraform state show 'cloudflare_dns_record.sites["apex"]'
+# ... or just:
+terraform show
+```
+
+This file stays as a reference for the **process and command format**,
+useful if you ever need to import a similar resource again (e.g. after a
+lost/reset local state, or when adding a new DigitalOcean/Cloudflare
+resource elsewhere).
 
 ## 1. VPS (Droplet)
 
@@ -31,65 +31,66 @@ the reason for the residual diff.
 | Terraform resource address | `digitalocean_droplet.vps` |
 | Type | `digitalocean_droplet` |
 | Real resource | The DigitalOcean Droplet hosting `jvmello-infra`'s `docker-compose.yml` |
-| ID | `581957249` |
+| Status | ✅ Imported on 2026-08-30 |
+
+Command format used (real ID redacted here — see `terraform state show
+digitalocean_droplet.vps` for the actual one):
 
 ```bash
-terraform import digitalocean_droplet.vps 581957249
+terraform import digitalocean_droplet.vps <DROPLET_ID>
 ```
 
 ## 2. DNS records (Cloudflare)
 
-Zone: `jvmello.dev`, zone ID `9d24076d0c7fb69fe9cf0243002f350d` (confirmed
-via the Cloudflare API — this is what `data.cloudflare_zone.jvmello_dev`
-resolves at plan time, no need to hardcode it anywhere).
+Zone: `jvmello.dev`. All records use the same resource type, with
+`for_each`; each address includes the key from the `local.dns_records` map
+(`terraform/locals.tf`) in brackets.
 
-All records use the same resource type, with `for_each`; each address
-includes the key from the `local.dns_records` map (`terraform/locals.tf`)
-in brackets.
-
-| Terraform resource address | Real host | Real type | Real `proxied` | Record ID |
+| Terraform resource address | Real host | Real type | Real `proxied` | Status |
 |---|---|---|---|---|
-| `cloudflare_dns_record.sites["apex"]` | `jvmello.dev` | A | true | `3c1833e101872a36efda13df007588a1` |
-| `cloudflare_dns_record.sites["www"]` | `www.jvmello.dev` | **CNAME** (→ `jvmello.dev`) | true | `cefe83f3a9d8cf3c7ddcf17c4d88bb0f` |
-| `cloudflare_dns_record.sites["worldcup"]` | `worldcup.jvmello.dev` | A | true | `2c8e840a426fb859500faa828b666dfb` |
-| `cloudflare_dns_record.sites["worldcup_api"]` | `api.worldcup.jvmello.dev` | A | **false** | `29b927fc30b3eb4f410e2d94407d085c` |
-| `cloudflare_dns_record.sites["analytics"]` | `analytics.jvmello.dev` | A | true | `fb1e9a4096c00cda1bdafa0253a49154` |
-| `cloudflare_dns_record.sites["weplay"]` | `weplay.jvmello.dev` | A | true | `eec0936d176fdead150b50209cdfc59a` |
-| `cloudflare_dns_record.sites["worldcup_match_ratings"]` | `worldcup-match-ratings.jvmello.dev` | A | true | `368ce188b89cf7c4162ef8f0c75eb700` |
+| `cloudflare_dns_record.sites["apex"]` | `jvmello.dev` | A | true | ✅ Imported |
+| `cloudflare_dns_record.sites["www"]` | `www.jvmello.dev` | **CNAME** (→ `jvmello.dev`) | true | ✅ Imported |
+| `cloudflare_dns_record.sites["worldcup"]` | `worldcup.jvmello.dev` | A | true | ✅ Imported |
+| `cloudflare_dns_record.sites["worldcup_api"]` | `api.worldcup.jvmello.dev` | A | **false** | ✅ Imported |
+| `cloudflare_dns_record.sites["analytics"]` | `analytics.jvmello.dev` | A | true | ✅ Imported |
+| `cloudflare_dns_record.sites["weplay"]` | `weplay.jvmello.dev` | A | true | ✅ Imported |
+| `cloudflare_dns_record.sites["worldcup_match_ratings"]` | `worldcup-match-ratings.jvmello.dev` | A | true | ✅ Imported |
 
-**Bold** values are the two spots where reality differed from the
-inventory's original assumption (both already fixed in `terraform/locals.tf`
-and `terraform/main.tf` before this table was written):
+**Bold** values above are the two spots where reality differed from the
+inventory's original assumption (both fixed in `terraform/locals.tf` and
+`terraform/main.tf` before the import): `www` is a CNAME to the apex, not
+a plain A record; `worldcup_api` has `proxied = false`, unlike every
+other host. `worldcup_match_ratings` was also a discovery of its own —
+the `jvmello-infra` README claimed it hadn't been created yet, but it
+already existed.
 
-- `www` is a **CNAME to the apex** (`jvmello.dev`), not an A record
-  pointing at the Droplet's IP.
-- `worldcup_api` has **`proxied = false`** in reality — every other host
-  here is proxied.
-- `worldcup_match_ratings` **already exists** — the `jvmello-infra`
-  README said this record hadn't been created yet, but the API confirms
-  it has (A, proxied), so it's included in the import batch and in
-  `terraform/locals.tf`'s `for_each`, unlike what
-  `docs/terraform-design.md` originally assumed.
+All records shared the Droplet's IP as content (except `www`, per the
+CNAME above).
 
-All records currently share Droplet IP `68.183.104.27` as content (except
-`www`, per the CNAME above) — that's also the `PublicIPv4` you'd see for
-Droplet `581957249` via `doctl`.
-
-Import commands (`<zone_id>/<record_id>` format for the
-`cloudflare/cloudflare` v5 provider):
+Command format used, `<zone_id>/<record_id>` (real IDs redacted — see
+`terraform state show 'cloudflare_dns_record.sites["<key>"]'` for the
+actual ones):
 
 ```bash
-terraform import 'cloudflare_dns_record.sites["apex"]' 9d24076d0c7fb69fe9cf0243002f350d/3c1833e101872a36efda13df007588a1
-terraform import 'cloudflare_dns_record.sites["www"]' 9d24076d0c7fb69fe9cf0243002f350d/cefe83f3a9d8cf3c7ddcf17c4d88bb0f
-terraform import 'cloudflare_dns_record.sites["worldcup"]' 9d24076d0c7fb69fe9cf0243002f350d/2c8e840a426fb859500faa828b666dfb
-terraform import 'cloudflare_dns_record.sites["worldcup_api"]' 9d24076d0c7fb69fe9cf0243002f350d/29b927fc30b3eb4f410e2d94407d085c
-terraform import 'cloudflare_dns_record.sites["analytics"]' 9d24076d0c7fb69fe9cf0243002f350d/fb1e9a4096c00cda1bdafa0253a49154
-terraform import 'cloudflare_dns_record.sites["weplay"]' 9d24076d0c7fb69fe9cf0243002f350d/eec0936d176fdead150b50209cdfc59a
-terraform import 'cloudflare_dns_record.sites["worldcup_match_ratings"]' 9d24076d0c7fb69fe9cf0243002f350d/368ce188b89cf7c4162ef8f0c75eb700
+terraform import 'cloudflare_dns_record.sites["apex"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["www"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["worldcup"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["worldcup_api"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["analytics"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["weplay"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["worldcup_match_ratings"]' <ZONE_ID>/<RECORD_ID>
 ```
 
-(Use single quotes around the address in the shell, because of the
-brackets and quotes in the `for_each` index.)
+How to get a record's ID, if you ever need to import a new one: Cloudflare
+dashboard → DNS → click the record (the URL/API shows the ID), or via API:
+
+```bash
+curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/<ZONE_ID>/dns_records?name=<HOSTNAME>"
+```
+
+(Use single quotes around the resource address in the shell, because of
+the brackets and quotes in the `for_each` index.)
 
 ## Not included in the import plan
 
@@ -112,27 +113,22 @@ brackets and quotes in the `for_each` index.)
 
 Terraform also supports declaring imports as code (an `import {}` block),
 processed during `terraform plan`/`apply`, instead of running `terraform
-import` manually one by one. **These were not added to this project** —
-even with the real IDs now known, running the imports one command at a
-time (as above) makes it easy to check `terraform plan` after each one
-individually. If you'd rather do it in one shot, you can create a file
-like `terraform/imports_generated.tf` (suggested name, not created here)
-with a block per resource:
+import` manually one by one. This project used individual `terraform
+import` commands instead (as above), which made it easy to check
+`terraform plan` after each one. For a future import batch, a file like
+this would let a single `terraform apply` import everything at once:
 
 ```hcl
 import {
   to = digitalocean_droplet.vps
-  id = "581957249"
+  id = "<DROPLET_ID>"
 }
 
 import {
   to = cloudflare_dns_record.sites["apex"]
-  id = "9d24076d0c7fb69fe9cf0243002f350d/3c1833e101872a36efda13df007588a1"
+  id = "<ZONE_ID>/<RECORD_ID>"
 }
-# ... one block per remaining DNS record, same IDs as the table above
+# ... one block per resource
 ```
 
-With `import` blocks, a single `terraform apply` imports everything at
-once (you'd still need to run `apply`, which this project deliberately
-doesn't do at this stage). If you go this route, remove the blocks after
-importing — they don't need to stay in the code.
+Remove the blocks after importing — they don't need to stay in the code.

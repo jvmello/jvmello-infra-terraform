@@ -17,17 +17,27 @@
 > created**. The "Firewalls" section below has been updated to reflect this.
 >
 > **Update after querying the DigitalOcean and Cloudflare APIs
-> (2026-08-29):** the Droplet ID (`581957249`), its public IPv4
-> (`68.183.104.27`), the Cloudflare zone ID
-> (`9d24076d0c7fb69fe9cf0243002f350d`), and every DNS record's real ID,
-> type, and `proxied` status are now known — see
-> [`terraform/imports.md`](../terraform/imports.md) for the full list. Two
-> details turned out to differ from what this document originally assumed:
+> (2026-08-29):** the Droplet's ID and public IPv4, the Cloudflare zone
+> ID, and every DNS record's real ID, type, and `proxied` status were
+> confirmed (real values kept only in the local, gitignored
+> `terraform.tfstate` — see `terraform/imports.md` for how to retrieve
+> them again if needed, since this document is public). Two details
+> turned out to differ from what this document originally assumed:
 > `www.jvmello.dev` is a **CNAME** (not an A record), and
 > `api.worldcup.jvmello.dev` has **`proxied = false`**. Also,
 > `worldcup-match-ratings.jvmello.dev` **already exists** — the
 > `jvmello-infra` README's claim that it hadn't been created yet was
 > outdated. The "DNS / Domains" section below reflects all of this.
+>
+> **Update after completing the import (2026-08-30):** the Droplet and
+> all 7 DNS records below are now imported into Terraform's state, and
+> `terraform plan` confirms a clean `No changes`. Along the way, two more
+> mismatches were caught and fixed before any `apply`: the Droplet's
+> `monitoring`/`backups` attributes (real Droplet had both `true`; the
+> code defaulted to `false`, and `monitoring` specifically forces a
+> destroy+recreate when changed) and a `comment` field this code added on
+> its own to every DNS record (none of them had one in reality). Both are
+> detailed in `docs/terraform-design.md`, "Migration risks".
 
 ## Architecture summary
 
@@ -80,9 +90,10 @@ any file in the repository.
 
 - **1 DigitalOcean Droplet** (single VPS), informally described as a "2
   CPU/4GB VPS" (README, Umami section). This is where the entire Docker
-  Compose stack runs. Real ID: `581957249`; public IPv4: `68.183.104.27`
-  (both confirmed via `doctl`/dashboard on 2026-08-29 — see
-  `terraform/imports.md`).
+  Compose stack runs. Its real ID and public IPv4 were confirmed via
+  `doctl`/dashboard on 2026-08-29 and are now imported into Terraform's
+  state — kept out of this public document, see `terraform/imports.md`
+  for how to retrieve them locally if needed.
 - **TODO — not identifiable from the repository:** region, size
   slug, image slug/ID, whether IPv6 is enabled,
   VPC, whether `user_data`/cloud-init was used at creation, which SSH
@@ -135,10 +146,11 @@ Two complementary, distinct layers (README, "Host firewall" section):
 
 ### IPs
 
-- **VPS's public IPv4: `68.183.104.27`** (confirmed via `doctl`/dashboard
-  on 2026-08-29). Used implicitly by every DNS record that points to the
-  server, but **not written anywhere in the `jvmello-infra` repository**
-  (not in `.env.example`, not in scripts).
+- **VPS's public IPv4** confirmed via `doctl`/dashboard on 2026-08-29 (kept
+  out of this public document — it's already imported into Terraform's
+  state, see `terraform/imports.md`). Used implicitly by every DNS record
+  that points to the server, but **not written anywhere in the
+  `jvmello-infra` repository** (not in `.env.example`, not in scripts).
 - No mention of IPv6 being enabled on the Droplet.
 - Cloudflare's IP ranges (IPv4 and IPv6) **are** documented, in
   `scripts/setup-firewall.sh` (copied from cloudflare.com/ips on 2026-07-08).
@@ -146,11 +158,12 @@ Two complementary, distinct layers (README, "Host firewall" section):
 ### DNS / Domains
 
 Root domain: `jvmello.dev` (registrar not identified — **TODO** — DNS
-hosted on Cloudflare, zone ID `9d24076d0c7fb69fe9cf0243002f350d`, account
-ID `9bde415bb0cfad72fc304c90067762e7`, both confirmed via the Cloudflare
-API on 2026-08-29). Hosts mentioned in the README's "Cloudflare" section,
-confirmed against the real zone (type, `proxied`, and record ID for each
-one are in [`terraform/imports.md`](../terraform/imports.md)):
+hosted on Cloudflare; the zone and account ID were confirmed via the
+Cloudflare API on 2026-08-29, and all record IDs since imported into
+Terraform's state — all of that kept out of this public document, see
+`terraform/imports.md` for how to retrieve it locally). Hosts mentioned
+in the README's "Cloudflare" section, confirmed against the real zone
+(type and `proxied` status for each one):
 
 | Host | Serves | Real type | Proxied | Status |
 |---|---|---|---|---|

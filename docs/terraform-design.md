@@ -37,7 +37,7 @@ infrastructure" from "orchestration on the VPS".
 See full details, with address and suggested command, in
 [`terraform/imports.md`](../terraform/imports.md). Summary:
 
-1. `digitalocean_droplet.vps` — the existing VPS (real ID `581957249`).
+1. `digitalocean_droplet.vps` — the existing VPS.
 2. `cloudflare_dns_record.sites["..."]` (7 records, via `for_each`) —
    `jvmello.dev`, `www.jvmello.dev`, `worldcup.jvmello.dev`,
    `api.worldcup.jvmello.dev`, `analytics.jvmello.dev`, `weplay.jvmello.dev`,
