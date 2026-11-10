@@ -57,5 +57,25 @@ locals {
       proxied = true
       content = null
     }
+    # Created by hand in Cloudflare on 2026-09-26 (Tactical Analysis). The
+    # proxied/A shape below is ASSUMED to match the other hosts — confirm it
+    # against the real record, then import it (terraform/imports.md) before
+    # the next apply, otherwise Terraform will try to create a duplicate.
+    tactical_analysis = {
+      name    = "tactical-analysis.${var.cloudflare_zone_name}"
+      type    = "A"
+      proxied = true
+      content = null
+    }
+    # sports-cut license server (jvmello-infra: Caddyfile block + the
+    # "sports-cut-license" compose service). Does NOT exist on Cloudflare yet:
+    # unlike the records above, "terraform apply" creates it — no import.
+    # Same A/proxied shape as the other hosts that sit behind Caddy.
+    license = {
+      name    = "license.${var.cloudflare_zone_name}"
+      type    = "A"
+      proxied = true
+      content = null
+    }
   }
 }

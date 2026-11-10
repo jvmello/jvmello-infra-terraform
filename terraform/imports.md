@@ -55,6 +55,7 @@ Zone: `jvmello.dev`. All records use the same resource type, with
 | `cloudflare_dns_record.sites["analytics"]` | `analytics.jvmello.dev` | A | true | ✅ Imported |
 | `cloudflare_dns_record.sites["weplay"]` | `weplay.jvmello.dev` | A | true | ✅ Imported |
 | `cloudflare_dns_record.sites["worldcup_match_ratings"]` | `worldcup-match-ratings.jvmello.dev` | A | true | ✅ Imported |
+| `cloudflare_dns_record.sites["tactical_analysis"]` | `tactical-analysis.jvmello.dev` | A (assumed) | true (assumed) | ⏳ Pending import — record created by hand in Cloudflare on 2026-09-26; confirm type/proxy against the real record first |
 
 **Bold** values above are the two spots where reality differed from the
 inventory's original assumption (both fixed in `terraform/locals.tf` and
@@ -79,6 +80,7 @@ terraform import 'cloudflare_dns_record.sites["worldcup_api"]' <ZONE_ID>/<RECORD
 terraform import 'cloudflare_dns_record.sites["analytics"]' <ZONE_ID>/<RECORD_ID>
 terraform import 'cloudflare_dns_record.sites["weplay"]' <ZONE_ID>/<RECORD_ID>
 terraform import 'cloudflare_dns_record.sites["worldcup_match_ratings"]' <ZONE_ID>/<RECORD_ID>
+terraform import 'cloudflare_dns_record.sites["tactical_analysis"]' <ZONE_ID>/<RECORD_ID>   # pending
 ```
 
 How to get a record's ID, if you ever need to import a new one: Cloudflare

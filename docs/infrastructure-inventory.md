@@ -30,7 +30,8 @@
 > outdated. The "DNS / Domains" section below reflects all of this.
 >
 > **Update after completing the import (2026-08-30):** the Droplet and
-> all 7 DNS records below are now imported into Terraform's state, and
+> the 7 DNS records that existed then are now imported into Terraform's state
+> (`tactical-analysis` was added later, on 2026-09-26, and is still pending), and
 > `terraform plan` confirms a clean `No changes`. Along the way, two more
 > mismatches were caught and fixed before any `apply`: the Droplet's
 > `monitoring`/`backups` attributes (real Droplet had both `true`; the
@@ -66,6 +67,9 @@ DigitalOcean Droplet (single VPS)
         ├─ worldcup-backup    (daily local pg_dump)
         ├─ match-ratings-api  (FastAPI: only /api/* for World Cup Match Ratings)
         ├─ match-ratings-import (on-demand/cron job — "jobs" profile)
+        ├─ tactical-web       (FastAPI: dashboard + API + PDF for Tactical Analysis, read-only)
+        ├─ tactical-pipeline  (on-demand job — "jobs" profile; loads the spreadsheet)
+        ├─ tactical-db        (Postgres 16, isolated network)
         ├─ umami              (self-hosted analytics)
         ├─ umami-db           (Postgres 16, isolated)
         └─ static sites served via bind mount (no dedicated container):
@@ -173,7 +177,9 @@ in the README's "Cloudflare" section, confirmed against the real zone
 | `api.worldcup.jvmello.dev` | Only `/api/*` for World Cup Analytics | A | **No** | Existing |
 | `analytics.jvmello.dev` | Umami (`umami:3000`) | A | Yes | Existing |
 | `weplay.jvmello.dev` | WePlay Marketing SPA (Caddy → `/srv/weplay`) | A | Yes | Existing |
+| `tactical-analysis.jvmello.dev` | Tactical Analysis dashboard + API + PDF (`tactical-web:8000`) | A (assumed) | Yes (assumed) | Created by hand 2026-09-26; **pending import** into Terraform — type/proxy not yet confirmed against the real record |
 | `worldcup-match-ratings.jvmello.dev` | Match Ratings dashboard + API | A | Yes | **Existing** — the `jvmello-infra` README claims this record "doesn't exist yet on Cloudflare", but querying the real zone shows it does. That README note is outdated. |
+| `license.jvmello.dev` | sports-cut license server (`sports-cut-license:8080`) — activates licenses for the sports-cut desktop app | A | Yes | **Not created yet** — declared in Terraform (`locals.tf`); created by the next `terraform apply`, no import needed |
 
 The original assumption in this document (before checking the API) was
 that every record was a plain A record pointing at the Droplet's IP, all
@@ -287,7 +293,8 @@ use — everything runs inside the single Droplet via Docker Compose.
 - DigitalOcean Droplet (the VPS) — **import**.
 - Cloudflare DNS records for the already-existing hosts (`jvmello.dev`,
   `www`, `worldcup`, `api.worldcup`, `analytics`, `weplay`,
-  `worldcup-match-ratings`) — **import**.
+  `worldcup-match-ratings`, and `tactical-analysis`, the last one still
+  pending import) — **import**.
 - Reference (read-only data source) to the `jvmello.dev` Cloudflare zone —
   not created nor imported, only queried.
 
@@ -300,8 +307,8 @@ use — everything runs inside the single Droplet via Docker Compose.
 | `scripts/setup-firewall.sh` (ufw) | Host-level operating-system configuration, not a cloud resource. |
 | DigitalOcean Cloud Firewall | **Doesn't exist** — confirmed in the dashboard. No resource to represent; see "Firewalls" section above. |
 | `.env` / secrets | Must never be in versioned code, Terraform included. |
-| `deploy-portfolio.sh`, `deploy-weplay.sh` | Application deployment (build + rsync + reload). |
-| Postgres databases (`worldcup-db`, `umami-db`) | Run as Docker containers, not a managed service — nothing to provision via a cloud provider. |
+| `deploy-portfolio.sh`, `deploy-weplay.sh`, `deploy-tactical-analysis.sh` | Application deployment (build + rsync + reload). |
+| Postgres databases (`worldcup-db`, `umami-db`, `tactical-db`) | Run as Docker containers, not a managed service — nothing to provision via a cloud provider. |
 | Backups (local `pg_dump`) | Internal application/compose mechanism; the external storage destination doesn't even exist yet (it's future TODO for `jvmello-infra` itself). |
 | TLS certificates | Issued/renewed automatically by Caddy; ephemeral, not sensibly manageable via Terraform here. |
 | Email DNS records (MX + TXT/SPF/DKIM) | Cloudflare Email Routing configuration, unrelated to the sites/VPS this migration covers. |

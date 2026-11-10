@@ -38,11 +38,12 @@ See full details, with address and suggested command, in
 [`terraform/imports.md`](../terraform/imports.md). Summary:
 
 1. `digitalocean_droplet.vps` — the existing VPS.
-2. `cloudflare_dns_record.sites["..."]` (7 records, via `for_each`) —
+2. `cloudflare_dns_record.sites["..."]` (8 records, via `for_each`) —
    `jvmello.dev`, `www.jvmello.dev`, `worldcup.jvmello.dev`,
    `api.worldcup.jvmello.dev`, `analytics.jvmello.dev`, `weplay.jvmello.dev`,
-   `worldcup-match-ratings.jvmello.dev` (this last one turned out to
-   already exist — see the note below).
+   `worldcup-match-ratings.jvmello.dev` (this one turned out to already
+   exist — see the note below) and `tactical-analysis.jvmello.dev` (created
+   by hand on 2026-09-26; import still pending).
 
 `data.cloudflare_zone.jvmello_dev` **is not imported** — it's a data
 source, read-only; it resolves the real `zone_id` from the domain name,
